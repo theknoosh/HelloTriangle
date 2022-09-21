@@ -12,6 +12,8 @@ class Renderer: NSObject, MTKViewDelegate {
     var parent: ContentView
     var metalDevice: MTLDevice!
     var metalCommandQueue: MTLCommandQueue
+    let pipelineState: MTLRenderPipelineState
+    let vertexBuffer: MTLBuffer
     
     init(_ parent: ContentView) {
         self.parent = parent
@@ -19,6 +21,28 @@ class Renderer: NSObject, MTKViewDelegate {
             self.metalDevice = metalDevice
         }
         self.metalCommandQueue = metalDevice.makeCommandQueue()!
+        
+        
+        let pipelineDescriptor = MTLRenderPipelineDescriptor()
+        let library = metalDevice.makeDefaultLibrary()
+        pipelineDescriptor.vertexFunction = library?.makeFunction(name: "vertexShader")
+        pipelineDescriptor.fragmentFunction = library?.makeFunction(name: "fragmentShader")
+        pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+        
+        do {
+            try pipelineState = metalDevice.makeRenderPipelineState(descriptor: pipelineDescriptor)
+        } catch {
+            fatalError()
+        }
+        
+        let vertices = [
+            Vertex(position: [-1, -1], color: [1, 0, 0, 1]),
+            Vertex(position: [1, -1], color: [0, 1, 0, 1]),
+            Vertex(position: [0, 1], color: [0, 0, 1, 1])
+        ]
+        vertexBuffer = metalDevice.makeBuffer(bytes: vertices, length: vertices.count * MemoryLayout<Vertex>.stride, options:[])!
+        
+        
         super.init()
         
     }
@@ -39,6 +63,10 @@ class Renderer: NSObject, MTKViewDelegate {
         rendererPassDescriptor?.colorAttachments[0].storeAction = .store
         
         let renderEncoder = commandBuffer?.makeRenderCommandEncoder(descriptor: rendererPassDescriptor!)
+        
+        renderEncoder?.setRenderPipelineState(pipelineState)
+        renderEncoder?.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
+        renderEncoder?.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
         
         renderEncoder?.endEncoding()
         
