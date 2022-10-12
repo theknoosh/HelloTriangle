@@ -6,6 +6,7 @@
 //
 
 import MetalKit
+import Foundation
 
 class Renderer: NSObject, MTKViewDelegate {
     
@@ -13,7 +14,8 @@ class Renderer: NSObject, MTKViewDelegate {
     var metalDevice: MTLDevice!
     var metalCommandQueue: MTLCommandQueue
     let pipelineState: MTLRenderPipelineState
-    let vertexBuffer: MTLBuffer
+    var scene: RenderScene
+    let mesh: TriangleMesh
     
     init(_ parent: ContentView) {
         self.parent = parent
@@ -35,13 +37,10 @@ class Renderer: NSObject, MTKViewDelegate {
             fatalError()
         }
         
-        let vertices = [
-            Vertex(position: [-1, -1], color: [1, 0, 0, 1]),
-            Vertex(position: [1, -1], color: [0, 1, 0, 1]),
-            Vertex(position: [0, 1], color: [0, 0, 1, 1])
-        ]
-        vertexBuffer = metalDevice.makeBuffer(bytes: vertices, length: vertices.count * MemoryLayout<Vertex>.stride, options:[])!
         
+        mesh = TriangleMesh(metalDevice: metalDevice)
+        
+        scene = RenderScene()
         
         super.init()
         
@@ -64,9 +63,11 @@ class Renderer: NSObject, MTKViewDelegate {
         
         let renderEncoder = commandBuffer?.makeRenderCommandEncoder(descriptor: rendererPassDescriptor!)
         
-        renderEncoder?.setRenderPipelineState(pipelineState)
-        renderEncoder?.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
-        renderEncoder?.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+        for _ in scene.triangles {
+            renderEncoder?.setRenderPipelineState(pipelineState)
+            renderEncoder?.setVertexBuffer(mesh.vertexBuffer, offset: 0, index: 0)
+            renderEncoder?.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+        }
         
         renderEncoder?.endEncoding()
         
