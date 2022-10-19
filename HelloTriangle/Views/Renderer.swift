@@ -18,6 +18,7 @@ class Renderer: NSObject, MTKViewDelegate {
     let mesh: TriangleMesh
     
     init(_ parent: ContentView) {
+        
         self.parent = parent
         if let metalDevice = MTLCreateSystemDefaultDevice() {
             self.metalDevice = metalDevice
@@ -51,6 +52,9 @@ class Renderer: NSObject, MTKViewDelegate {
     }
     
     func draw(in view: MTKView) {
+        
+        scene.update()
+        
         guard let drawable = view.currentDrawable else {
             return
         }
@@ -63,7 +67,23 @@ class Renderer: NSObject, MTKViewDelegate {
         
         let renderEncoder = commandBuffer?.makeRenderCommandEncoder(descriptor: rendererPassDescriptor!)
         
-        for _ in scene.triangles {
+        var cameraData: CameraParameters = CameraParameters()
+        cameraData.view = Matrix44.create_lookat(
+            eye: scene.player.position,
+            target: scene.player.position + scene.player.forwards,
+            up: scene.player.up
+        )
+        cameraData.projection = Matrix44.create_perspective_projection(
+            fovy: 45, aspect: 800/600, near: 0.1, far: 10
+        )
+        renderEncoder?.setVertexBytes(&cameraData, length: MemoryLayout<CameraParameters>.stride, index: 2)
+        
+        for triangle in scene.triangles {
+            
+            var modelMatrix: matrix_float4x4 = Matrix44.create_from_rotation(eulers: triangle.eulers)
+            modelMatrix = Matrix44.create_from_translation(translation: triangle.position) * modelMatrix;
+            renderEncoder?.setVertexBytes(&modelMatrix, length: MemoryLayout<matrix_float4x4>.stride, index: 1)
+            
             renderEncoder?.setRenderPipelineState(pipelineState)
             renderEncoder?.setVertexBuffer(mesh.vertexBuffer, offset: 0, index: 0)
             renderEncoder?.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)

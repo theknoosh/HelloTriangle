@@ -17,6 +17,7 @@ class Camera {
     var up: vector_float3
     
     init (position: vector_float3, eulers: vector_float3) {
+        
         self.position = position
         self.eulers = eulers
         

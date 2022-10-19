@@ -14,8 +14,8 @@ class RenderScene {
     
     init() {
         player = Camera(
-            position: [1.0, 2.0, 1.0],
-            eulers: [0.0, 90.0, 315.0]
+            position: [-3.0, 0.0, 0.0],
+            eulers: [0.0, 90.0, 0.0]
         )
         
         triangles = [
@@ -31,9 +31,10 @@ class RenderScene {
         player.updateVectors()
         
         for triangle in triangles {
-            triangle.eulers.x += 0.01
-            if triangle.eulers.x > 360 {
-                triangle.eulers.x -= 360
+            
+            triangle.eulers.z += 1.0
+            if triangle.eulers.z > 360 {
+                triangle.eulers.z -= 360
             }
         }
         
